@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Collapsible JSON Formatter</title>
+<style>
+    body {
+        font-family: Consolas, monospace;
+        padding: 20px;
+        background: #f4f4f4;
+    }
+    textarea {
+        width: 100%;
+        height: 200px;
+        padding: 10px;
+        font-family: Consolas;
+        border-radius: 6px;
+        border: 1px solid #ccc;
+        resize: vertical;
+    }
+    button {
+        padding: 10px 18px;
+        margin-top: 10px;
+        background: #007bff;
+        color: white;
+        border: none;
+        cursor: pointer;
+        border-radius: 6px;
+    }
+    #tree {
+        background: #fff;
+        margin-top: 20px;
+        padding: 15px;
+        border-radius: 6px;
+        border: 1px solid #ddd;
+        white-space: pre;
+    }
+
+    .node {
+        margin-left: 20px;
+    }
+
+    .toggle {
+        cursor: pointer;
+        color: #007bff;
+        margin-right: 4px;
+        user-select: none;
+    }
+
+    .key { color: #005cc5; }
+    .string { color: #032f62; }
+    .number { color: #d73a49; }
+    .boolean { color: #d73a49; }
+    .null { color: #6a737d; }
+</style>
+</head>
+<body>
+
+<h2>JSON Formatter (Collapsible)</h2>
+
+<textarea id="input" placeholder="Paste JSON here..."></textarea>
+<br>
+<button onclick="formatJSON()">Format JSON</button>
+
+<div id="tree"></div>
+
+<script>
+function formatJSON() {
+    const text = document.getElementById("input").value.trim();
+    const tree = document.getElementById("tree");
+    tree.innerHTML = "";
+
+    try {
+        const json = JSON.parse(text);
+        tree.appendChild(createNode(json));
+    } catch (e) {
+        tree.innerHTML = `<div style="color:red;font-weight:bold;">❌ Invalid JSON: ${e}</div>`;
+    }
+}
+
+function createNode(obj) {
+    const container = document.createElement("div");
+    container.className = "node";
+
+    if (typeof obj !== "object" || obj === null) {
+        container.innerHTML = colorize(obj);
+        return container;
+    }
+
+    const isArray = Array.isArray(obj);
+    const keys = isArray ? obj : Object.keys(obj);
+
+    const toggle = document.createElement("span");
+    toggle.className = "toggle";
+    toggle.textContent = "▼";
+
+    const openBrace = document.createElement("span");
+    openBrace.textContent = isArray ? "[" : "{";
+
+    const closeBrace = document.createElement("div");
+    closeBrace.textContent = isArray ? "]" : "}";
+
+    const children = document.createElement("div");
+    children.className = "children";
+
+    // Build child nodes
+    keys.forEach((key, idx) => {
+        const value = isArray ? key : obj[key];
+        const val = isArray ? obj[idx] : value;
+
+        const row = document.createElement("div");
+        row.className = "node";
+
+        if (!isArray) {
+            row.innerHTML += `<span class="key">"${key}"</span>: `;
+        }
+
+        if (typeof val === "object" && val !== null) {
+            row.appendChild(createNode(val));
+        } else {
+            row.innerHTML += colorize(val);
+        }
+        children.appendChild(row);
+    });
+
+    // Collapse behavior (fixed)
+    toggle.addEventListener("click", function (e) {
+        e.stopPropagation();
+
+        if (children.style.display === "none") {
+            children.style.display = "block";
+            toggle.textContent = "▼";
+        } else {
+            children.style.display = "none";
+            toggle.textContent = "▶";
+        }
+    });
+
+    // Append everything
+    container.appendChild(toggle);
+    container.appendChild(openBrace);
+    container.appendChild(children);
+    container.appendChild(closeBrace);
+
+    return container;
+}
+
+function colorize(v) {
+    if (typeof v === "string") return `<span class="string">"${v}"</span>`;
+    if (typeof v === "number") return `<span class="number">${v}</span>`;
+    if (typeof v === "boolean") return `<span class="boolean">${v}</span>`;
+    if (v === null) return `<span class="null">null</span>`;
+    return v;
+}
+</script>
+
+</body>
+</html>
